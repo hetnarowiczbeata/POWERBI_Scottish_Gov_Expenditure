@@ -1,0 +1,51 @@
+let
+    Źródło = Excel.Workbook(
+        File.Contents("C:\Users\Kornel Malig\Desktop\Beata_data_source\gers-2023-24-supplementary-data-expenditure-database.xlsx"),
+        null,
+        true
+    ),
+    Data_Sheet = Źródło{[Item="Data",Kind="Sheet"]}[Data],
+    #"Nagłówki o podwyższonym poziomie" = Table.PromoteHeaders(Data_Sheet, [PromoteAllScalars=true]),
+    #"Usunięto inne kolumny" = Table.SelectColumns(#"Nagłówki o podwyższonym poziomie",{"dept_name", "hmt_function", "idornon", "cap_or_cur", "gers19_20", "gers20_21", "gers21_22", "gers22_23"}),
+    #"Wstawiony tekst za ogranicznikiem1" = Table.AddColumn(
+    #"Usunięto inne kolumny", 
+    "HMT FUNCTION", 
+    each 
+        if [hmt_function] = "10. Social protection" then "Social protection" 
+        else if [hmt_function] = "1. General public services of which: internation" then "International services" 
+        else if [hmt_function] = "2. Defence" then "Defence" 
+        else if [hmt_function] = "3. Public order and safety" then "Public order and safety" 
+        else if [hmt_function] = "4. Economic affairs of which: agriculture, fishe" then "agriculture, fishe" 
+        else if [hmt_function] = "4. Economic affairs of which: employment policie" then "employment policie" 
+        else if [hmt_function] = "4. Economic affairs of which: enterprise and eco" then "enterprise and eco" 
+        else if [hmt_function] = "4. Economic affairs of which: science and techno" then "science and techno" 
+        else if [hmt_function] = "4. Economic affairs of which: transport" then "transport" 
+        else if [hmt_function] = "5. Environment protection" then "Environment protection" 
+        else if [hmt_function] = "6. Housing and community amenities" then "Housing and community amenities" 
+        else if [hmt_function] = "7. Health" then "Health" 
+        else if [hmt_function] = "8. Recreation, culture and religion" then "Recreation, culture and religion" 
+        else if [hmt_function] = "9. Education" then "Education" 
+        else if [hmt_function] = "1. General public services of which: public and" then "Public and common services" 
+        else if [hmt_function] = "1. of which: Public Sector Debt Interest" then "PUBLIC SECTOR DEBT INTEREST" 
+        else if [hmt_function] = "18. PSF ACCOUNTING ADJUSTMENT" then "PSF ACCOUNTING ADJUSTMENT"
+        else [hmt_function],
+    type text
+),
+    #"Typ danych" = Table.TransformColumns(
+    #"Wstawiony tekst za ogranicznikiem1",
+    { {"gers19_20", each Number.Round(_ * 1000000, 0), Int64.Type},
+        {"gers20_21", each Number.Round(_ * 1000000, 0), Int64.Type},
+        {"gers21_22", each Number.Round(_ * 1000000, 0), Int64.Type},
+        {"gers22_23", each Number.Round(_ * 1000000, 0), Int64.Type}
+    }
+),
+    #"Dodano indeks" = Table.AddIndexColumn(#"Typ danych", "Indeks", 1, 1, Int64.Type),
+    #"Anulowano przestawienie tylko zaznaczonych kolumn" = Table.Unpivot(#"Dodano indeks", {"gers19_20", "gers20_21", "gers21_22", "gers22_23"}, "Atrybut", "Wartość"),
+    #"Dodano kolumnę niestandardową" = Table.AddColumn(#"Anulowano przestawienie tylko zaznaczonych kolumn", "YEAR", each Text.Combine({"20", Text.Middle([Atrybut], 4, 2)}), type text),
+    #"Usunięto inne kolumny2" = Table.SelectColumns(#"Dodano kolumnę niestandardową",{"dept_name", "idornon", "cap_or_cur", "HMT FUNCTION", "Indeks", "Wartość", "YEAR"}),
+    #"Zmieniono nazwy kolumn1" = Table.RenameColumns(#"Usunięto inne kolumny2",{{"Wartość", "FY VALUE"}, {"dept_name", "DEPARTMENT"}, {"cap_or_cur", "CAP/CUR"}, {"idornon", "ID"}}),
+    #"Zmieniono typ" = Table.TransformColumnTypes(#"Zmieniono nazwy kolumn1",{{"ID", type text}, {"CAP/CUR", type text}, {"YEAR", type date}}),
+    #"Tekst pisany wielkimi literami" = Table.TransformColumns(#"Zmieniono typ",{{"DEPARTMENT", Text.Upper, type text}, {"ID", Text.Upper, type text}, {"HMT FUNCTION", Text.Upper, type text}}),
+    #"Pogrupowano wiersze" = Table.Group(#"Tekst pisany wielkimi literami", {"DEPARTMENT", "ID", "CAP/CUR", "HMT FUNCTION", "YEAR"}, {{"FY VALUE", each List.Sum([FY VALUE]), type number}})
+in
+    #"Pogrupowano wiersze"
