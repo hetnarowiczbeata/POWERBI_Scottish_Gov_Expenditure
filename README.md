@@ -1,2 +1,2 @@
-# Data-Portfolio-
-This folder contains my data portfolio projects, including query codes, Power BI files (.pbix), Excel sheets, SQL scripts, and screenshots of dashboards and analyses, as well as the results of these analyses, showcasing my skills in data analysis, visualization, and database management.
+The data comes from https://www.gov.scot/publications/government-expenditure-revenue-scotland-gers-2023-24/ 
+The proper approach would be to validate it in Excel, but I wanted to use Power Query for data processing.
