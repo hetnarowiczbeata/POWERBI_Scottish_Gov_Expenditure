@@ -1,0 +1,65 @@
+SUM OF SPENDING = 
+VAR Sumt =SUM(DATA[FY VALUE])
+    RETURN
+    IF(Sumt = 0, BLANK(), Sumt)
+
+YoY SPENDING = 
+CALCULATE(
+    [SUM OF SPENDING],
+    DATEADD('Dim_Calendar'[Date], -1, YEAR)
+)
+
+AVERAGEYOY = AVERAGEX(ALL(Dim_Calendar), [YoY %])
+
+
+CAGR = 
+VAR StartYear =
+    CALCULATE(MIN(Dim_Calendar[Year]), ALL(Dim_Calendar))
+VAR EndYear =
+    CALCULATE(MAX(Dim_Calendar[Year]), ALL(Dim_Calendar))
+VAR StartVal =
+    CALCULATE([SUM OF SPENDING], FILTER(ALL(Dim_Calendar), Dim_Calendar[Year] = StartYear))
+VAR EndVal =
+    CALCULATE([SUM OF SPENDING], FILTER(ALL(Dim_Calendar), Dim_Calendar[Year] = EndYear))
+VAR NumYears = EndYear - StartYear
+RETURN
+IF(
+    StartVal > 0 && EndVal > 0 && NumYears > 0,
+    (EndVal / StartVal) ^ (1 / NumYears) - 1,
+    BLANK()
+)
+
+
+1 TOP EXENSIVE DEPARTMENT VALUE = 
+VAR TOPEXENSIVE1 =
+    TOPN(1,SUMMARIZE(Dim_DEPARTMENT,Dim_DEPARTMENT[DEPARTMENT], "SPENDING", [SUM OF SPENDING]),
+    [SPENDING], DESC
+    )
+RETURN
+MAXX(TOPEXENSIVE1, [SPENDING])
+
+  
+PERCENTAGE OF TOTAL DEPARTMENT = DIVIDE([TOP 5 DEPARTAMENT],[SUM OF SPENDING])
+
+
+
+  YoY % = 
+VAR Curr = [SUM OF SPENDING]
+VAR Prev = [YoY SPENDING]
+VAR YoYValue =
+    IF(
+        ISBLANK(Curr) || ISBLANK(Prev) || Prev = 0,
+        "-",
+        DIVIDE(Curr - Prev, Prev)
+    )
+RETURN
+IF(
+    HASONEVALUE(Dim_Calendar[Year]),
+    YoYValue,
+    "-" 
+)
+
+
+
+  
+
