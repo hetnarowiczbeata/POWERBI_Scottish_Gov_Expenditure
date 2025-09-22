@@ -1,4 +1,4 @@
-Interactive Power BI dashboard
+Interactive Power BI Report
 The goal of the project was to transform raw financial data into actionable insights and present it in a clear and user-friendly format.
 
 Government Expenditure Scotland 2019–2022 – Key Insights
